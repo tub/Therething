@@ -492,7 +492,8 @@ int getNoteFromScale(int sensorReading){
 /* Fills in currentNotes with the midi notes to play
         and bucketSize with the size of the sections each note will play for along the sensor range */
 void makeScale(){
-  int notesSize = range * SCALE_LENGTH;
+  // Add one to the length so we go all the way back to the root note again.
+  int notesSize = (range * SCALE_LENGTH) + 1;
   bucketSize = (float)(SENSOR_RANGE + 1) / (float)notesSize;
   
   int transposition = (octave * 12) + 12;
