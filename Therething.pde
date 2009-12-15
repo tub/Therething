@@ -24,6 +24,8 @@
 #define SENSOR_SCALE_FACTOR (127.0 / (float)SENSOR_RANGE)
 #define SCALE_LENGTH 7
 
+#define LED_MAX 255
+
 //////////////////////////////////////////////////////////////////////////////
 // Pin configuration
 
@@ -361,7 +363,9 @@ void setup() {
 #else
   // Initialise the ultra-sonic sensors
   sensor_L.begin(SENSOR_L_RX, SENSOR_L_TX, 9600);
+  sensor_L.setTimeout(20);
   sensor_R.begin(SENSOR_R_RX, SENSOR_R_TX, 9600);
+  sensor_R.setTimeout(20);
 #endif
 
   // Set MIDI baud rate
@@ -581,7 +585,7 @@ void doMusic() {
     modeChanged = false;
     lcd.clear();
     if(optionMode == CONTROLLER){
-      lcd.setCursor(6, 0);
+      lcd.setCursor(5, 0);
       lcd.print("Controller");
     }else{
       lcd.setCursor(8, 0);
@@ -606,27 +610,30 @@ void doMusic() {
   lastLeft = left;
   lastRight = right;
   
-    if(inv_left){
-       left = SENSOR_MAX - left;
-     }
-     if(inv_right){
-        right = SENSOR_MAX - right;
-      }
+  analogWrite(RED_L, (SENSOR_MAX - left) * (LED_MAX / SENSOR_MAX));
+  analogWrite(RED_R, (SENSOR_MAX - right) * (LED_MAX / SENSOR_MAX));
+  
+  if(inv_left){
+     left = SENSOR_MAX - left;
+  }
+  if(inv_right){
+     right = SENSOR_MAX - right;
+  }
 
-      lcd.setCursor(0, 1);
-      drawBar(left);
-      lcd.setCursor(0, 3);
-      drawBar(right);
+  lcd.setCursor(0, 1);
+  drawBar(left);
+  lcd.setCursor(0, 3);
+  drawBar(right);
 
-      //Switch depending on mode
-      switch(optionMode){
-      case CONTROLLER:
-        sendControllers(left, right);
-        break;
-      case NOTES:
-        sendNote(left, right);
-        break;
-    }
+  //Switch depending on mode
+  switch(optionMode){
+    case CONTROLLER:
+      sendControllers(left, right);
+      break;
+    case NOTES:
+      sendNote(left, right);
+      break;
+  }
 }
 
 void drawBar(int value){
@@ -868,6 +875,8 @@ void turn() {
     return;
   }
   
+  blinkBlue();
+  
   boolean up = digitalRead(ENCODER_B);
   
   //If we're not in a menu, just change mode
@@ -893,20 +902,32 @@ void turn() {
     if (up) {
       int total_items = totalItems();
       item++;
-      if (item >= total_items) item = total_items - 1;
+      if (item >= total_items){
+        item = total_items - 1;
+        blinkRed();
+      }
     } else {
       item--;
-      if (item < 0) item = 0;
+      if (item < 0){ 
+        item = 0;
+        blinkRed();
+      }
     }
     break;
   case LEFT_CC_NO:
     if (up) {
       left_cc_number++;
       // If we're going UP and we end up negative, we've overflown to -128. Set to 127
-      if (left_cc_number < 0) left_cc_number = 127;
+      if (left_cc_number < 0){
+        left_cc_number = 127;
+        blinkRed();
+      }
     } else {
       left_cc_number--;
-      if (left_cc_number < 0) left_cc_number = 0;
+      if (left_cc_number < 0){ 
+        left_cc_number = 0;
+        blinkRed();
+      }
     }
     EEPROM.write(4, left_cc_number);
     break;
@@ -914,22 +935,50 @@ void turn() {
     if (up) {
       right_cc_number++;
       // If we're going UP and we end up negative, we've overflown to -128. Set to 127
-      if (right_cc_number < 0) right_cc_number = 127;
+      if (right_cc_number < 0){
+        right_cc_number = 127;
+        blinkRed();
+      }
     } else {
       right_cc_number--;
-      if (right_cc_number < 0) right_cc_number = 0;
+      if (right_cc_number < 0){
+        right_cc_number = 0;
+        blinkRed();
+      }
     }
     EEPROM.write(5, right_cc_number);
     break;
   case MIDI_CHANNEL:
     if (up) {
       midi_channel++;
-      if (midi_channel > 15) midi_channel = 15;
+      if (midi_channel > 15){
+        midi_channel = 15;
+        blinkRed();
+      }
     } else {
       midi_channel--;
-      if (midi_channel < 0) midi_channel = 0;
+      if (midi_channel < 0){
+        midi_channel = 0;
+        blinkRed();
+      }
     }
     EEPROM.write(6, midi_channel);
     break;
   }
+}
+
+void blinkRed(){
+  analogWrite(RED_L, 255);
+  analogWrite(RED_R, 255);
+  delayMicroseconds(100000);//0.1 sec
+  analogWrite(RED_L, 0);
+  analogWrite(RED_R, 0);  
+}
+
+void blinkBlue(){
+  analogWrite(BLUE_L, 100);
+  analogWrite(BLUE_R, 100);
+  delayMicroseconds(100000);//0.1 sec
+  analogWrite(BLUE_L, 0);
+  analogWrite(BLUE_R, 0);  
 }
