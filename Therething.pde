@@ -2,7 +2,7 @@
 #include <NewSoftSerial.h>
 
 #include <avr/pgmspace.h>
-#include <LiquidCrystal.h>
+#include <LiquidCrystal.h>g
 
 #include <EEPROM.h>
 
@@ -34,30 +34,20 @@ enum encoder_pins {
 };
 
 enum lcd_pins {
-  LCD_RS = 9,
-  LCD_RW = 10,
-  LCD_ENABLE = 11,
+  LCD_RS = 18,
+  LCD_RW = 19,
+  LCD_ENABLE = 7,
   LCD_D4 = 8,
-  LCD_D5 = 7,
-  LCD_D6 = 6,
-  LCD_D7 = 5
+  LCD_D5 = 11,
+  LCD_D6 = 12,
+  LCD_D7 = 13
 };
 
 enum sensor_pins {
-  SENSOR_L_RX = 14,
-  SENSOR_L_TX = 15,
+  SENSOR_L_RX = 15,
+  SENSOR_L_TX = 14,
   SENSOR_R_RX = 17,
   SENSOR_R_TX = 16
-};
-
-enum led_pins {
-  NOTE_LED = 18,
-  CONTROLLER_LED = 19
-};
-
-enum button_pins {
-  NOTE_BUTTON = 12,
-  CONTROLLER_BUTTON = 13
 };
 
 enum mode {
@@ -70,6 +60,18 @@ enum midi{
  NOTE_ON = 1, 
  CC = 3,
  PITCH_BEND = 6,
+};
+
+enum leds{
+ RED_R =  5,
+ BLUE_R = 6,
+ RED_L = 10,
+ BLUE_L= 9    
+};
+
+enum led_pins {
+  NOTE_LED = 18,
+  CONTROLLER_LED = 19
 };
 
 char scales[20][7] = { 
@@ -272,6 +274,9 @@ unsigned long last_interrupt = 0; // Last time the rotary encoder was used
 
 mode optionMode;
 
+//Set to true temporarily to flag that UI should show current mode.
+boolean modeChanged = false;
+
 unsigned char currentNotes[50]; // The current notes to play, should be mapped to the entire sensing length
 
 float bucketSize; // sensor range  / number of notes. Will be set by makeScale()
@@ -345,6 +350,8 @@ void setup() {
   digitalWrite(ENCODER_B, HIGH);
   attachInterrupt(1, turn, RISING);
   
+  analogWrite(RED_R, 255);//OK
+  
   // Initialise the LCD
 #ifdef USE_LCD
   lcd.begin(20,4);
@@ -362,11 +369,6 @@ void setup() {
 //  Serial.begin(28800);
   
   makeScale();
-  
-  pinMode(NOTE_BUTTON, INPUT);
-  pinMode(CONTROLLER_BUTTON, INPUT);
-  digitalWrite(NOTE_BUTTON, HIGH);
-  digitalWrite(CONTROLLER_BUTTON, HIGH);
   
   pinMode(NOTE_LED, OUTPUT);
   pinMode(CONTROLLER_LED, OUTPUT);
@@ -401,51 +403,7 @@ void loop(){
     last_loop = MUSIC;
   }
 
-// HACK to work around dodgyily soldered NOTE_MODE button
-  if (debounceButtonRead(CONTROLLER_BUTTON)) {
-    if (optionMode == CONTROLLER) {
-      optionMode = NOTES;
-      EEPROM.write(9, 0);
-      digitalWrite(NOTE_LED, HIGH);
-      digitalWrite(CONTROLLER_LED, LOW);
-      lcd.clear();
-    } else {
-      optionMode = CONTROLLER;
-      EEPROM.write(9, 1);
-      digitalWrite(NOTE_LED, LOW);
-      digitalWrite(CONTROLLER_LED, HIGH);
-      lcd.clear();
-    }
-  }
-  
-  /*
-  if (debounceButtonRead(NOTE_BUTTON)) {
-      optionMode = NOTES;
-      EEPROM.write(9, 0);
-      digitalWrite(NOTE_LED, HIGH);
-      digitalWrite(CONTROLLER_LED, LOW);
-      lcd.clear();
-  }
-  if (debounceButtonRead(CONTROLLER_BUTTON)) {
-      optionMode = CONTROLLER;
-      EEPROM.write(9, 1);
-      digitalWrite(NOTE_LED, LOW);
-      digitalWrite(CONTROLLER_LED, HIGH);
-      lcd.clear();
-   }
-   */
 }
-
-boolean debounceButtonRead(int pin) {
-  if (digitalRead(pin)) {
-    delay(10);
-    if(digitalRead(pin)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 
 //////////////////////////////////////////////////////////////////////////////
 // Retreive a measurement from the passed URMSerial object
@@ -460,7 +418,7 @@ int getMeasurement(URMSerial s)
     value = max(0, min(value-SENSOR_MIN, SENSOR_MAX)); // use the 10-60cm range
     break;
   default:
-    value = -1;
+    value = SENSOR_MAX;
     break;
   } 
   return value;
@@ -573,26 +531,26 @@ void sendControllers(int c1, int c2){
   if(controller1 != prevCont1){
     prevCont1 = controller1;
     sendCC(left_cc_number, controller1);
-    lcd.setCursor(0,0);
-    lcd.print("CC# ");
-    lcd.print((int)left_cc_number);
-    lcd.setCursor(7,0);
-    lcd.print(": ");
-    lcd.print(controller1);
-    lcd.print("  ");
   }
+  lcd.setCursor(0,0);
+  lcd.print("CC# ");
+  lcd.print((int)left_cc_number);
+  lcd.setCursor(7,0);
+  lcd.print(": ");
+  lcd.print(controller1);
+  lcd.print("  ");
   
   if(controller2 != prevCont2){
     prevCont2 = controller2;
     sendCC(right_cc_number, controller2);
-    lcd.setCursor(0,2);
-    lcd.print("CC# ");
-    lcd.print((int)right_cc_number);
-    lcd.setCursor(7,2);
-    lcd.print(": ");
-    lcd.print(controller2);
-    lcd.print("  ");
   }
+  lcd.setCursor(0,2);
+  lcd.print("CC# ");
+  lcd.print((int)right_cc_number);
+  lcd.setCursor(7,2);
+  lcd.print(": ");
+  lcd.print(controller2);
+  lcd.print("  ");
 }
 
 // This function sends a Midi CC.
@@ -604,12 +562,6 @@ void sendMidi(int type, byte partOne, byte partTwo){
   Serial.print(genctrl(type), BYTE);
   Serial.print(partOne, BYTE);
   Serial.print(partTwo, BYTE);
-  
-/*  Serial.print(partOne, DEC);
-  Serial.print("\t");
-  Serial.print(partTwo, DEC);
-  Serial.println();
-*/
 }
 
 /*! Internal method, don't care about this one.. \n It generates a status byte over a channel and a type, by bitshifting. */
@@ -625,6 +577,19 @@ int lastLeft = 0;
 int lastRight = 0;
 
 void doMusic() {
+  if(modeChanged == true){
+    modeChanged = false;
+    lcd.clear();
+    if(optionMode == CONTROLLER){
+      lcd.setCursor(6, 0);
+      lcd.print("Controller");
+    }else{
+      lcd.setCursor(8, 0);
+      lcd.print("Notes");
+    }
+    delay(500);
+    lcd.clear();
+  }
   
 //Read Sensors
 #ifdef IR_SENSOR
@@ -903,9 +868,26 @@ void turn() {
     return;
   }
   
+  boolean up = digitalRead(ENCODER_B);
+  
+  //If we're not in a menu, just change mode
+  if (last_loop == MUSIC) {
+    if (up == true && optionMode == CONTROLLER) {
+      optionMode = NOTES;
+      EEPROM.write(9, 0);
+      modeChanged = true;
+    }
+    if (up == false && optionMode == NOTES) {
+      optionMode = CONTROLLER;
+      EEPROM.write(9, 1);
+      modeChanged = true;
+    }
+
+    return;
+  }
+  
   last_interrupt = millis();
   
-  boolean up = digitalRead(ENCODER_B);
   switch (menu_area) {
   case MAIN_MENUS:
     if (up) {
