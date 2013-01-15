@@ -1,5 +1,19 @@
 #include <URMSerial.h>
 #include <NewSoftSerial.h>
+#define SENSOR_HC true
+//#define SENSOR_IR true
+#if SENSOR_HC
+#include <NewPing.h>
+
+#define TRIGGER_PIN_L  A0
+#define ECHO_PIN_L     A1
+#define TRIGGER_PIN_R A2
+#define ECHO_PIN_R     A3
+
+#define MAX_DISTANCE_CM 120
+NewPing ultrasoundL(TRIGGER_PIN_L, ECHO_PIN_L, MAX_DISTANCE_CM);
+NewPing ultrasoundR(TRIGGER_PIN_R, ECHO_PIN_R, MAX_DISTANCE_CM);
+#endif
 
 #include <avr/pgmspace.h>
 #include <LiquidCrystal.h>
@@ -11,15 +25,17 @@
 
 #define MENU_TIMEOUT 5000 // Milliseconds until the menu timesout
 
-#ifdef IR_SENSOR
+#ifdef SENSOR_IR
 #define SENSOR_MIN 100
 #define SENSOR_MAX 500 // Range of valid sensor readings
-#else
-#define SENSOR_MIN 10 // Lowest valid sensor reading
-#define SENSOR_MAX 50 // Range of valid sensor readings
 #endif
 
-#define SENSOR_RANGE SENSOR_MAX
+#if SENSOR_HC
+#define SENSOR_MIN 150 // Lowest valid sensor reading
+#define SENSOR_MAX 5000 // Range of valid sensor readings
+#endif
+
+#define SENSOR_RANGE SENSOR_MAX - SENSOR_MIN
 
 #define SENSOR_SCALE_FACTOR (127.0 / (float)SENSOR_RANGE)
 #define SCALE_LENGTH 7
@@ -304,8 +320,6 @@ boolean inv_right; // When true the right sensor range is inverted
 #ifdef USE_LCD
 LiquidCrystal lcd(LCD_RS, LCD_RW, LCD_ENABLE, LCD_D4,LCD_D5,LCD_D6,LCD_D7);
 #endif
-URMSerial sensor_L;
-URMSerial sensor_R;
 
 //////////////////////////////////////////////////////////////////////////////
 // Called by the Arduino firmware just after reset.
@@ -361,13 +375,6 @@ void setup() {
 
 #ifdef IR_SENSOR
 #else
-  // Initialise the ultra-sonic sensors
-  sensor_L.begin(SENSOR_L_RX, SENSOR_L_TX, 9600);
-  sensor_L.setTimeout(20);
-  sensor_R.begin(SENSOR_R_RX, SENSOR_R_TX, 9600);
-  sensor_R.setTimeout(20);
-#endif
-
   // Set MIDI baud rate
   Serial.begin(31250);
 //  Serial.begin(28800);
@@ -410,23 +417,19 @@ void loop(){
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Retreive a measurement from the passed URMSerial object
+// Retreive a measurement from the passed ultrasound
 
-int getMeasurement(URMSerial s)
+#if SENSOR_HC
+int getMeasurement(NewPing s)
 {
-  int value = 0; // This value will be populated
-  // Request a distance reading from the URM37
-  switch(s.requestMeasurementOrTimeout(DISTANCE, value)) // Find out the type of request
-  {
-  case DISTANCE: // Double check the reading we recieve is of DISTANCE type
-    value = max(0, min(value-SENSOR_MIN, SENSOR_MAX)); // use the 10-60cm range
-    break;
-  default:
-    value = SENSOR_MAX;
-    break;
-  } 
-  return value;
+    unsigned long raw = s.ping();
+#if DEBUG
+    Serial.print("RAW ");
+    Serial.println(raw);
+#endif
+    return max(0, min(s.ping() - SENSOR_MIN, SENSOR_MAX));
 }
+#endif
 
 int getIrMeasurement(int pin){
   int value = analogRead(pin);
@@ -596,16 +599,19 @@ void doMusic() {
   }
   
 //Read Sensors
-#ifdef IR_SENSOR
+#ifdef SENSOR_IR
   int left  = getIrMeasurement(0);//ain 0 = pin 14
   int right = getIrMeasurement(1);//ain 1 = pin 15
-#else
-  int left  = getMeasurement(sensor_L);
-  int right = getMeasurement(sensor_R);
+#endif
+#ifdef SENSOR_HC
+  delay(30);
+  int left  = getMeasurement(ultrasoundL);
+  delay(30);
+  int right = getMeasurement(ultrasoundR);
 #endif
 
-  if (left == -1) left = lastLeft;
-  if (right == -1) right = lastRight;
+  if (left < 1) left = lastLeft;
+  if (right < 1) right = lastRight;
   
   lastLeft = left;
   lastRight = right;
