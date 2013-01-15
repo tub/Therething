@@ -16,6 +16,8 @@ NewPing ultrasoundL(TRIGGER_PIN_L, ECHO_PIN_L, MAX_DISTANCE_CM);
 NewPing ultrasoundR(TRIGGER_PIN_R, ECHO_PIN_R, MAX_DISTANCE_CM);
 #endif
 
+#include "Bar.h"
+
 #include <avr/pgmspace.h>
 #include <LiquidCrystal.h>
 
@@ -303,6 +305,7 @@ boolean inv_right; // When true the right sensor range is inverted
 // Devices
 
 LiquidCrystal lcd(LCD_RS, LCD_RW, LCD_ENABLE, LCD_D4,LCD_D5,LCD_D6,LCD_D7);
+Bar bar;
 
 //////////////////////////////////////////////////////////////////////////////
 // Called by the Arduino firmware just after reset.
@@ -622,12 +625,14 @@ void doMusic() {
      right = SENSOR_MAX - right;
   }
 
-#if LCD_ROWS == 4
-  lcd.setCursor(0, 1);
-  drawBar(left);
-  lcd.setCursor(0, 3);
-  drawBar(right);
-#endif
+  char barStart = 0;
+  if(LCD_ROWS == 2){
+    barStart = 9;
+  }
+
+  //draw LCD bars
+  bar.draw(lcd, barStart, 15, 0, SENSOR_RANGE, left);
+  bar.draw(lcd, barStart, 15, LCD_ROWS/2, SENSOR_RANGE, right);
 
   //Switch depending on mode
   switch(optionMode){
@@ -637,17 +642,6 @@ void doMusic() {
     case NOTES:
       sendNote(left, right);
       break;
-  }
-}
-
-void drawBar(int value){
-  int length = ((float)value) * (20.0 / SENSOR_RANGE);
-  for(int i = 0; i < 20; i++){
-    if(i < length){
-      lcd.write(0xff);
-    }else{
-      lcd.write(' ');
-    }
   }
 }
 
@@ -968,8 +962,6 @@ void turn() {
     break;
   }
 }
-
-
 
 void blinkLeds(){
   digitalWrite(NOTE_LED, HIGH);
