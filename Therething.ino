@@ -423,13 +423,21 @@ int getMeasurement(NewPing s)
     Serial.print("RAW ");
     Serial.println(raw);
 #endif
-    return max(0, min(s.ping() - SENSOR_MIN, SENSOR_MAX));
+    // constrain to max
+    raw = min(s.ping() - SENSOR_MIN, SENSOR_MAX);
+    if(raw == SENSOR_MAX){
+      return -1; // no reading
+    }
+    return (int) max(0, raw);
 }
 #endif
 
 int getIrMeasurement(int pin){
   int value = analogRead(pin);
-  value = max(0, min(value-SENSOR_MIN, SENSOR_MAX));
+  // constrain to max
+  value = min(value - SENSOR_MIN, SENSOR_MAX);
+  // constrain above 0
+  value = max(0, value);
   return value;
 }
 
