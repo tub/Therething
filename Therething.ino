@@ -27,18 +27,19 @@ NewPing ultrasoundR(TRIGGER_PIN_R, ECHO_PIN_R, MAX_DISTANCE_CM);
 #define MENU_TIMEOUT 5000 // Milliseconds until the menu timesout
 
 #ifdef SENSOR_IR
-#define SENSOR_MIN 100
-#define SENSOR_MAX 500 // Range of valid sensor readings
+const int SENSOR_MIN = 100;
+const int SENSOR_MAX = 500; // Range of valid sensor readings
 #endif
 
 #if SENSOR_HC
-#define SENSOR_MIN 150 // Lowest valid sensor reading
-#define SENSOR_MAX 5000 // Range of valid sensor readings
+const int SENSOR_MIN = 150; // Lowest valid sensor reading
+const int SENSOR_MAX = 5000; // Range of valid sensor readings
 #endif
 
-#define SENSOR_RANGE SENSOR_MAX - SENSOR_MIN
+const int SENSOR_RANGE = SENSOR_MAX - SENSOR_MIN;
 
-#define SENSOR_SCALE_FACTOR (127.0 / (float)SENSOR_RANGE)
+const float SENSOR_SCALE_FACTOR = 127.0 / SENSOR_RANGE;
+
 #define SCALE_LENGTH 7
 
 #define LED_MAX 255
@@ -358,6 +359,16 @@ void setup() {
 #if DEBUG
   // debug rate
   Serial.begin(115200);
+  Serial.println("Therething starting...");
+  Serial.print("SENSOR_MAX: ");
+  Serial.println(SENSOR_MAX);
+  Serial.print("SENSOR_MIN: ");
+  Serial.println(SENSOR_MIN);
+  Serial.print("SENSOR_RANGE: ");
+  Serial.println(SENSOR_RANGE);
+  Serial.print("SENSOR_SCALE_FACTOR: ");
+  Serial.println(SENSOR_SCALE_FACTOR);
+  Serial.println("-----------------");
 #else
   // Set MIDI baud rate
   Serial.begin(31250);
