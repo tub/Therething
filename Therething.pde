@@ -1,6 +1,8 @@
 #define SENSOR_HC true
 //#define SENSOR_IR true
 #define DEBUG true
+#define LCD_ROWS 2
+
 #if SENSOR_HC
 #include <NewPing.h>
 
@@ -307,9 +309,7 @@ boolean inv_right; // When true the right sensor range is inverted
 //////////////////////////////////////////////////////////////////////////////
 // Devices
 
-#ifdef USE_LCD
 LiquidCrystal lcd(LCD_RS, LCD_RW, LCD_ENABLE, LCD_D4,LCD_D5,LCD_D6,LCD_D7);
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Called by the Arduino firmware just after reset.
@@ -357,9 +357,7 @@ void setup() {
   attachInterrupt(1, turn, RISING);
     
   // Initialise the LCD
-#ifdef USE_LCD
-  lcd.begin(20,4);
-#endif
+  lcd.begin(20,LCD_ROWS);
 
 #if DEBUG
   // debug rate
@@ -472,7 +470,7 @@ void sendNote(int note, int vel){
   lcd.print("    ");
   //Scale velocity over entire sensor range
   int scaledVel = (float)vel * SENSOR_SCALE_FACTOR;
-  lcd.setCursor(0,2);
+  lcd.setCursor(0,LCD_ROWS / 2);
   lcd.print("Vel:  ");
   lcd.print(scaledVel);
   lcd.print("    ");
@@ -549,10 +547,10 @@ void sendControllers(int c1, int c2){
     prevCont2 = controller2;
     sendCC(right_cc_number, controller2);
   }
-  lcd.setCursor(0,2);
+  lcd.setCursor(0, LCD_ROWS / 2);
   lcd.print("CC# ");
   lcd.print((int)right_cc_number);
-  lcd.setCursor(7,2);
+  lcd.setCursor(7, LCD_ROWS / 2);
   lcd.print(": ");
   lcd.print(controller2);
   lcd.print("  ");
@@ -631,10 +629,12 @@ void doMusic() {
      right = SENSOR_MAX - right;
   }
 
+#if LCD_ROWS == 4
   lcd.setCursor(0, 1);
   drawBar(left);
   lcd.setCursor(0, 3);
   drawBar(right);
+#endif
 
   //Switch depending on mode
   switch(optionMode){
@@ -668,14 +668,14 @@ void doMenu() {
       int total_items = totalItems();
 
       int top_item = item - 1;
-      if (top_item > (total_items - 4)) {
-        top_item = total_items - 4;
+      if (top_item > (total_items - LCD_ROWS)) {
+        top_item = total_items - LCD_ROWS;
       }
       if (top_item < 0) {
         top_item = 0;
       }
 
-      for (int line = 0; line < 4; line++) {
+      for (int line = 0; line < LCD_ROWS; line++) {
         if (line + top_item < total_items) {
             lcd.setCursor(0, line);
           if (item == (line + top_item)) {
@@ -736,7 +736,7 @@ void doMenu() {
       }
       
       itoa(cur_value, buffer, 10);
-      lcd.setCursor(6, 2);
+      lcd.setCursor(6, LCD_ROWS / 2);
       if (cur_value > min_value) {
         lcd.write(0x7f);
       } else {
