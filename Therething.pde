@@ -2,7 +2,7 @@
 #include <NewSoftSerial.h>
 
 #include <avr/pgmspace.h>
-#include <LiquidCrystal.h>g
+#include <LiquidCrystal.h>
 
 #include <EEPROM.h>
 
