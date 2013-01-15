@@ -480,17 +480,17 @@ int prevVel = 0;
 void sendNote(int note, int vel){
   int noteNumber = getNoteFromScale(note);
   lcd.setCursor(0,0);
-  lcd.print("Note: ");
+  lcd.print("Note:    ");
+  lcd.setCursor(5, 0);
   lcd.print(getNoteName(noteNumber));
   lcd.print(getOctaveNumber(noteNumber));
-  lcd.print("    ");
   //Scale velocity over entire sensor range
-  int scaledVel = (float)vel * SENSOR_SCALE_FACTOR;
-  lcd.setCursor(0,LCD_ROWS / 2);
-  lcd.print("Vel:  ");
+  int scaledVel = (float)vel * (float)SENSOR_SCALE_FACTOR;
+  lcd.setCursor(0, LCD_ROWS / 2);
+  lcd.print("Velo:   ");
+  lcd.setCursor(5, LCD_ROWS / 2);
   lcd.print(scaledVel);
-  lcd.print("    ");
-  
+
   if(noteNumber != prevNote){
     /* next note on, then previous note off - 
        this is so we can overlap the notes and glide between them if needed.
@@ -550,26 +550,25 @@ void sendControllers(int c1, int c2){
   if(controller1 != prevCont1){
     prevCont1 = controller1;
     sendCC(left_cc_number, controller1);
+    printCC(left_cc_number, 0, controller1);
   }
-  lcd.setCursor(0,0);
-  lcd.print("CC# ");
-  lcd.print((int)left_cc_number);
-  lcd.setCursor(7,0);
-  lcd.print(": ");
-  lcd.print(controller1);
-  lcd.print("  ");
   
   if(controller2 != prevCont2){
     prevCont2 = controller2;
     sendCC(right_cc_number, controller2);
+    printCC(right_cc_number, LCD_ROWS/2, controller2);
   }
-  lcd.setCursor(0, LCD_ROWS / 2);
-  lcd.print("CC# ");
+}
+
+void printCC(char ccNum, char lcdRow, int value){
+  lcd.setCursor(0, lcdRow);
+  lcd.print("CC   ");
+  lcd.setCursor(2, lcdRow);
   lcd.print((int)right_cc_number);
-  lcd.setCursor(7, LCD_ROWS / 2);
-  lcd.print(": ");
-  lcd.print(controller2);
-  lcd.print("  ");
+  lcd.setCursor(5, lcdRow);
+  lcd.print(":   ");
+  lcd.setCursor(6, lcdRow);
+  lcd.print(value);
 }
 
 // This function sends a Midi CC.
