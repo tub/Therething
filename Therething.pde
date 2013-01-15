@@ -77,13 +77,6 @@ enum midi{
  PITCH_BEND = 6,
 };
 
-enum leds{
- RED_R =  5,
- BLUE_R = 6,
- RED_L = 10,
- BLUE_L= 9    
-};
-
 enum led_pins {
   NOTE_LED = 18,
   CONTROLLER_LED = 19
@@ -362,9 +355,7 @@ void setup() {
   digitalWrite(ENCODER_A, HIGH);
   digitalWrite(ENCODER_B, HIGH);
   attachInterrupt(1, turn, RISING);
-  
-  analogWrite(RED_R, 255);//OK
-  
+    
   // Initialise the LCD
 #ifdef USE_LCD
   lcd.begin(20,4);
@@ -633,9 +624,6 @@ void doMusic() {
   lastLeft = left;
   lastRight = right;
   
-  analogWrite(RED_L, (SENSOR_MAX - left) * (LED_MAX / SENSOR_MAX));
-  analogWrite(RED_R, (SENSOR_MAX - right) * (LED_MAX / SENSOR_MAX));
-  
   if(inv_left){
      left = SENSOR_MAX - left;
   }
@@ -898,8 +886,6 @@ void turn() {
     return;
   }
   
-  blinkBlue();
-  
   boolean up = digitalRead(ENCODER_B);
   
   //If we're not in a menu, just change mode
@@ -927,13 +913,13 @@ void turn() {
       item++;
       if (item >= total_items){
         item = total_items - 1;
-        blinkRed();
+        blinkLeds();
       }
     } else {
       item--;
       if (item < 0){ 
         item = 0;
-        blinkRed();
+        blinkLeds();
       }
     }
     break;
@@ -943,13 +929,13 @@ void turn() {
       // If we're going UP and we end up negative, we've overflown to -128. Set to 127
       if (left_cc_number < 0){
         left_cc_number = 127;
-        blinkRed();
+        blinkLeds();
       }
     } else {
       left_cc_number--;
       if (left_cc_number < 0){ 
         left_cc_number = 0;
-        blinkRed();
+        blinkLeds();
       }
     }
     EEPROM.write(4, left_cc_number);
@@ -960,13 +946,13 @@ void turn() {
       // If we're going UP and we end up negative, we've overflown to -128. Set to 127
       if (right_cc_number < 0){
         right_cc_number = 127;
-        blinkRed();
+        blinkLeds();
       }
     } else {
       right_cc_number--;
       if (right_cc_number < 0){
         right_cc_number = 0;
-        blinkRed();
+        blinkLeds();
       }
     }
     EEPROM.write(5, right_cc_number);
@@ -976,13 +962,13 @@ void turn() {
       midi_channel++;
       if (midi_channel > 15){
         midi_channel = 15;
-        blinkRed();
+        blinkLeds();
       }
     } else {
       midi_channel--;
       if (midi_channel < 0){
         midi_channel = 0;
-        blinkRed();
+        blinkLeds();
       }
     }
     EEPROM.write(6, midi_channel);
@@ -990,18 +976,12 @@ void turn() {
   }
 }
 
-void blinkRed(){
-  analogWrite(RED_L, 255);
-  analogWrite(RED_R, 255);
-  delayMicroseconds(100000);//0.1 sec
-  analogWrite(RED_L, 0);
-  analogWrite(RED_R, 0);  
-}
 
-void blinkBlue(){
-  analogWrite(BLUE_L, 100);
-  analogWrite(BLUE_R, 100);
+
+void blinkLeds(){
+  digitalWrite(NOTE_LED, HIGH);
+  digitalWrite(CONTROLLER_LED, HIGH);
   delayMicroseconds(100000);//0.1 sec
-  analogWrite(BLUE_L, 0);
-  analogWrite(BLUE_R, 0);  
+  digitalWrite(NOTE_LED, LOW);
+  digitalWrite(CONTROLLER_LED, LOW);  
 }
