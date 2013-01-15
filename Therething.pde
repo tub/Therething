@@ -51,20 +51,13 @@ enum encoder_pins {
 };
 
 enum lcd_pins {
-  LCD_RS = 18,
-  LCD_RW = 19,
-  LCD_ENABLE = 7,
+  LCD_RS = 11,
+  LCD_RW = 10,
+  LCD_ENABLE = 9,
   LCD_D4 = 8,
-  LCD_D5 = 11,
-  LCD_D6 = 12,
-  LCD_D7 = 13
-};
-
-enum sensor_pins {
-  SENSOR_L_RX = 15,
-  SENSOR_L_TX = 14,
-  SENSOR_R_RX = 17,
-  SENSOR_R_TX = 16
+  LCD_D5 = 7,
+  LCD_D6 = 6,
+  LCD_D7 = 5
 };
 
 enum mode {
