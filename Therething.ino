@@ -355,6 +355,7 @@ void setup() {
     
   // Initialise the LCD
   lcd.begin(20,LCD_ROWS);
+  bar.init(lcd);
 
 #if DEBUG
   // debug rate
