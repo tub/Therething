@@ -1,5 +1,6 @@
 #define SENSOR_HC true
 //#define SENSOR_IR true
+#define DEBUG true
 #if SENSOR_HC
 #include <NewPing.h>
 
@@ -18,8 +19,6 @@ NewPing ultrasoundR(TRIGGER_PIN_R, ECHO_PIN_R, MAX_DISTANCE_CM);
 
 #include <EEPROM.h>
 
-//#define IR_SENSOR true
-#define USE_LCD  true
 
 #define MENU_TIMEOUT 5000 // Milliseconds until the menu timesout
 
@@ -371,11 +370,13 @@ void setup() {
   lcd.begin(20,4);
 #endif
 
-#ifdef IR_SENSOR
+#if DEBUG
+  // debug rate
+  Serial.begin(115200);
 #else
   // Set MIDI baud rate
   Serial.begin(31250);
-//  Serial.begin(28800);
+#endif
   
   makeScale();
   
@@ -529,6 +530,14 @@ int prevCont1 = 256;
 int prevCont2 = 256;
 
 void sendControllers(int c1, int c2){
+  
+#if DEBUG
+  Serial.print("\t\t\t");
+  Serial.print(c1);
+  Serial.print("\t");
+  Serial.println(c2);
+#endif
+
   //Scale CCs over entire sensor range
   int controller1 = (float)c1 * SENSOR_SCALE_FACTOR;
   int controller2 = (float)c2 * SENSOR_SCALE_FACTOR;
@@ -564,9 +573,19 @@ void sendCC(byte c_num, byte c_val){
 }
 
 void sendMidi(int type, byte partOne, byte partTwo){
-  Serial.print(genctrl(type), BYTE);
-  Serial.print(partOne, BYTE);
-  Serial.print(partTwo, BYTE);
+#if DEBUG
+  Serial.print("MIDI [");
+  Serial.print(type);
+  Serial.print(", ");
+  Serial.print(partOne);
+  Serial.print(", ");
+  Serial.print(partTwo);  
+  Serial.println("]");
+#else
+  Serial.write(genctrl(type));
+  Serial.write(partOne);
+  Serial.write(partTwo);
+#endif
 }
 
 /*! Internal method, don't care about this one.. \n It generates a status byte over a channel and a type, by bitshifting. */
